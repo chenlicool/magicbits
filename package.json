@@ -1,0 +1,11 @@
+{
+  "name": "magicbits",
+  "version": "1.0.0",
+  "description": "MagicBits — Figma plugin for rapid whiteboard creation",
+  "main": "code.js",
+  "scripts": {
+    "build": "node --check code.js && node scripts/validate-release.mjs",
+    "render:assets": "node scripts/render-publishing-assets.mjs",
+    "validate:release": "node scripts/validate-release.mjs"
+  }
+}

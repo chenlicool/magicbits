@@ -1,0 +1,18 @@
+{
+  "name": "MagicBits",
+  "id": "1644375627139509918",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  },
+  "relaunchButtons": [
+    { "command": "reroll-random", "name": "🎯 随机重排" },
+    { "command": "reroll-grid", "name": "📐 网格重排" }
+  ]
+}

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MagicBits — ScatterBoard</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f5f5f5;
+    --border: #e5e5e5;
+    --text: #1a1a1a;
+    --text-secondary: #666666;
+    --accent: #7C4DFF;
+    --accent-hover: #651FFF;
+    --orange: #FF9800;
+    --blue: #2196F3;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg);
+    padding: 18px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-icon {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .header-icon img { width: 100%; height: 100%; display: block; }
+  .header-title { font-size: 14px; font-weight: 700; }
+  .header-sub { font-size: 10px; color: var(--text-secondary); }
+  .lang-toggle {
+    margin-left: auto;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 8px;
+    white-space: nowrap;
+  }
+  .lang-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Tab 切换 */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 14px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .tab {
+    flex: 1; min-width: 0; padding: 9px 10px; text-align: center;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    background: var(--surface); color: var(--text-secondary);
+    border: none; transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .tab.active {
+    background: var(--accent); color: #fff;
+  }
+  .tab:not(.active):hover { background: #e8e8e8; }
+
+  /* 状态提示 */
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: var(--radius);
+    font-size: 11px; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .status-bar.ok { background: #E8F5E9; color: #2E7D32; }
+  .status-bar.warn { background: #FFF3E0; color: #E65100; }
+  .status-bar.err { background: #FFEBEE; color: #C62828; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot.green { background: #4CAF50; }
+  .dot.orange { background: #FF9800; }
+  .dot.red { background: #F44336; }
+
+  .section { margin-bottom: 14px; }
+  .section-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .row-label { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+  .row-value { font-size: 11px; font-weight: 600; color: var(--text); min-width: 48px; text-align: right; flex-shrink: 0; }
+
+  select {
+    width: 100%; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-family: var(--font); font-size: 11px; color: var(--text);
+    background: var(--surface); cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  select:focus { outline: none; border-color: var(--accent); }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px; border-radius: 2px;
+    background: var(--border); outline: none;
+    margin: 4px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  input[type="number"] {
+    width: 72px; padding: 5px 6px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: var(--font); font-size: 11px; color: var(--text);
+    text-align: center;
+  }
+  input[type="number"]:focus { outline: none; border-color: var(--accent); }
+
+  .checkbox-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;
+  }
+
+  .btn {
+    width: 100%; padding: 10px;
+    border: none; border-radius: var(--radius);
+    font-family: var(--font); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+  }
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: var(--orange); color: #fff;
+  }
+  .btn-secondary:hover { background: #F57C00; transform: translateY(-1px); }
+  .btn-secondary:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+  .footer {
+    margin-top: 10px; text-align: center;
+    font-size: 9px; color: #ccc;
+  }
+
+  /* 隐藏/显示 */
+  .hidden { display: none !important; }
+  .flex { display: flex !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon" aria-hidden="true"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF8xNTVfMikiPgo8cGF0aCBkPSJNMCA0MEMwIDE3LjkwODYgMTcuOTA4NiAwIDQwIDBIODhDMTEwLjA5MSAwIDEyOCAxNy45MDg2IDEyOCA0MFY4OEMxMjggMTEwLjA5MSAxMTAuMDkxIDEyOCA4OCAxMjhINDBDMTcuOTA4NiAxMjggMCAxMTAuMDkxIDAgODhWNDBaIiBmaWxsPSJ1cmwoI3BhaW50MF9saW5lYXJfMTU1XzIpIi8+CjxwYXRoIGQ9Ik00Ny4yNzYzIDEwNy4zNjRDNTQuMTg3NyAxMTEuMzMgNjUuODE2MiAxMTUuNjk5IDc3Ljg0MTMgMTExLjk3Qzg2LjE2NjEgMTA4LjIzMiAxMDIuNjg5IDk3LjI5NjkgMTA3LjIwOCA5Mi42ODIyQzk5LjQ0ODUgOTAuOTIwNCA1OS40MTU0IDk4LjI4NjYgNDcuMjc2MyAxMDcuMzY0WiIgZmlsbD0idXJsKCNwYWludDFfbGluZWFyXzE1NV8yKSIvPgo8cGF0aCBkPSJNMTYuNjY2NiA1MS4wNjY3QzE2LjkzMzMgMzcuNDY2NyAyNCAzMS44NjY3IDI4LjUzMzMgMjguOEw1MS4wNjY2IDE3LjQ2NjdDNTcuNDY2NiAxNC44IDY2IDEyLjY2NjcgNzYuOTMzMyAxNi45MzM0TDk5LjQ2NjYgMjcuODY2N0MxMDUuMDY3IDMxLjA2NjcgMTExLjQ2NyAzNi44IDExMS40NjcgNTAuNTMzNEwxMTEuMiA3NkMxMTAuOTMzIDg3LjQ2NjcgMTA0LjQgOTUuMDY2NyA5OC42NjY2IDk5LjA2NjdMNzkuNDY2NiAxMDkuMkM3MC40IDExNC4xMzMgNTkuMDY2NiAxMTQuNCA0OS40NjY2IDEwOS44NjdMMjcuODY2NiA5OC4xMzM0QzIyLjggOTQuOCAxNi44IDg3LjczMzQgMTYuNjY2NiA3NS4zMzM0VjUxLjA2NjdaIiBmaWxsPSIjRTZFNkU1Ii8+CjxwYXRoIGQ9Ik02NS4wNjY3IDc2LjkzMzRDNjUuMDY2NyA2Ny4zMzM0IDcwLjUzMzMgNTguNTMzNCA4MC4yNjY2IDUzLjA2NjdMOTUuNiA0NS4yQzEwNS4wNjcgNDAuNCAxMTEuMiA0Mi4yNjY3IDExMS4zMzMgNTEuMzMzNEwxMTEuMiA3NC42NjY3QzExMS4yIDg0LjY2NjcgMTA4LjI2NyA5MiA5OS42IDk4LjY2NjdMODAuOCAxMDguNTMzQzcxLjg2NjYgMTEzLjMzMyA2NS4wNjY3IDExMC41MzMgNjUuMDY2NyA5OC41MzM0Vjc2LjkzMzRaIiBmaWxsPSIjQ0VDRUNEIi8+CjxwYXRoIGQ9Ik02Mi44MDAxIDk4LjUzMzNDNjIuODAwMSAxMDkuMiA1Ni44MDAxIDExMi45MzMgNDguNTMzNCAxMDkuMkwyOC4yNjY3IDk4LjRDMjIuNjY2NyA5NC45MzMzIDE2LjggODcuNDY2NyAxNi44IDc2TDE3LjA2NjcgNTEuMkMxNy4wNjY3IDQ1LjMzMzMgMjIuNjY2NyAzOS4yIDMxLjQ2NjcgNDRMNDguOTMzNCA1My4wNjY3QzU1Ljg2NjcgNTYuNTMzMyA2Mi44MDAxIDY1LjIgNjIuODAwMSA3NlY5OC41MzMzWiIgZmlsbD0iI0Y0RjRGNCIvPgo8cGF0aCBkPSJNNTAuMjY2NiAxOC42NjY3QzU2LjEzMzMgMTUuNzMzMyA2NS40NjY2IDEyLjggNzcuMTk5OSAxNi45MzMzTDk3LjQ2NjYgMjcuMkMxMDUuNDY3IDMxLjQ2NjcgMTA1LjA2NyAzNy44NjY3IDk2LjY2NjYgNDJMNzguMzk5OSA1MS4zMzMzQzcxLjczMzMgNTQuOCA2MC4xMzMzIDU2LjUzMzMgNTEuMzMzMyA1Mi4yNjY3TDMxLjk5OTkgNDIuMTMzM0MyMy45OTk5IDM3Ljg2NjcgMjMuMTk5OSAzMS43MzMzIDMwLjY2NjYgMjguMjY2N0w1MC4yNjY2IDE4LjY2NjdaIiBmaWxsPSIjRjRGNEY0Ii8+CjxwYXRoIGQ9Ik0yNi42NjY2IDMwTDUwLjUzMzMgMTcuODY2NkM1NS4yIDE1LjczMzMgNjMuMiAxMy44NjY2IDY3LjMzMzMgMTQuOEM2Mi4xMzMzIDE0LjggNTcuMzMzMyAxNS44NjY2IDUyIDE4LjEzMzNMMzEuMiAyOC4yNjY2QzI2LjEzMzMgMzAuNjY2NiAyNS4wNjY2IDMzLjg2NjYgMjYuMTMzMyAzNi4yNjY2QzI0LjggMzQuNTMzMyAyNS4zMzMzIDMxLjQ2NjYgMjYuNjY2NiAzMFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zMC4xMzMzIDQzLjQ2NjdDMzIuNTMzMyA0NC4yNjY3IDQyLjggNDkuNiA0Ny44NjY3IDUyLjI2NjdDNTMuNDY2NyA1NC41MzMzIDU4LjkzMzMgNTkuODY2NyA2MS42IDY3LjMzMzNDNTkuMiA2My4yIDU2LjUzMzMgNTcuNiA0OC41MzMzIDUzLjJMMzMuMzMzMyA0NS40NjY3QzI5Ljg2NjcgNDMuNzMzMyAyNy40NjY3IDQyLjQgMjQgNDIuNTMzM0MyNS40NjY3IDQyIDI4LjEzMzMgNDIuNjY2NyAzMC4xMzMzIDQzLjQ2NjdaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNOTcuNDY2NyAyNy4yQzEwMS4wNjcgMjguOCAxMDUuNDY3IDMxLjg2NjcgMTA3LjQ2NyAzNS4zMzMzQzEwOS40NjcgMzkuMiAxMDUuNDY3IDQyIDEwMC42NjcgNDIuNjY2N0MxMDMuODY3IDQxLjMzMzMgMTA3Ljg2NyAzOC40IDEwNi41MzMgMzUuNDY2N0MxMDUuNDY3IDMzLjIgMTAyLjUzMyAyOS42IDk3LjQ2NjcgMjcuMloiIGZpbGw9IiNFNkU2RTUiLz4KPHBhdGggZD0iTTcwLjkzMzQgMzMuMzMzM0M3MiAzNS40NjY2IDY5LjQ2NjcgMzcuODY2NiA2NC4wMDAxIDM3Ljg2NjZDNTkuMjAwMSAzNy44NjY2IDU1LjMzMzQgMzUuMiA1Ny4yMDAxIDMyQzU5LjQ2NjcgMjkuMDY2NiA2OC42NjY3IDI4LjI2NjYgNzAuOTMzNCAzMi4yNjY2VjMzLjMzMzNaIiBmaWxsPSIjMDQwMzA0Ii8+CjxwYXRoIGQ9Ik0zNS4xNDAxIDcwLjU3NzVDMzkuMTQwMSA2OS4yNDQyIDQzLjgwNjggNzUuNjQ0MiA0Mi40NzM0IDgwLjcxMDhDNDAuNzQwMSA4NS41MTA4IDMzLjgwNjggODIuMTc3NSAzMi40NzM0IDc1LjkxMDlDMzEuOTQwMSA3My4zNzc1IDMzLjAwNjggNzAuNzEwOSAzNS4xNDAxIDcwLjU3NzVaIiBmaWxsPSIjMDQwMjAzIi8+CjxwYXRoIGQ9Ik0yNC44ODY0IDc5LjY0NDVDMjguODg2NCA3OC4zMTExIDMzLjU1MzEgODQuNzExMSAzMi4yMTk4IDg5Ljc3NzhDMzAuNDg2NCA5NC41Nzc4IDIzLjU1MzEgOTEuMjQ0NSAyMi4yMTk4IDg0Ljk3NzhDMjEuNjg2NCA4Mi40NDQ1IDIyLjc1MzEgNzkuNzc3OCAyNC44ODY0IDc5LjY0NDVaIiBmaWxsPSIjMDQwMjAzIi8+CjxwYXRoIGQ9Ik00Ny4xODc2IDYxLjgxMzFDNTEuMTg3NiA2MC40Nzk4IDU1Ljg1NDMgNjYuODc5OCA1NC41MjA5IDcxLjk0NjRDNTIuNzg3NiA3Ni43NDY0IDQ1Ljg1NDMgNzMuNDEzMSA0NC41MjA5IDY3LjE0NjRDNDMuOTg3NiA2NC42MTMxIDQ1LjA1NDMgNjEuOTQ2NCA0Ny4xODc2IDYxLjgxMzFaIiBmaWxsPSIjMDQwMjAzIi8+CjxwYXRoIGQ9Ik03NC42NjY3IDYzLjg2NjdDODAuMjY2NyA1OS4yIDgzLjMzMzQgNjMuODY2NyA4MC41MzM0IDY5Ljg2NjdDNzcuMiA3Ni41MzMzIDcwLjY2NjcgNzcuMiA3MS40NjY3IDY5LjZDNzIgNjcuMzMzMyA3My4yIDY1LjIgNzQuNjY2NyA2My44NjY3WiIgZmlsbD0iIzA0MDIwMyIvPgo8cGF0aCBkPSJNODYuMTMzMyA3Mi4yNjY3QzkwLjUzMzMgNjguMTMzMyA5NC41MzMzIDcxLjIgOTIuNjY2NyA3Ni44QzkwLjEzMzMgODMuMzMzNCA4My4zMzMzIDg1LjYgODMuNDY2NyA3OC4xMzM0QzgzLjczMzMgNzYgODQuOCA3My44NjY3IDg2LjEzMzMgNzIuMjY2N1oiIGZpbGw9IiMwNDAyMDMiLz4KPHBhdGggZD0iTTk3LjY2MDUgNTIuNjAzM0MxMDIuOTIxIDQ3LjExOSAxMDYuOCA1MC4xMzMyIDEwNC45MzMgNTYuNTMzMkMxMDIuMjY3IDYzLjE5OTkgOTUuNiA2NS40NjY1IDk1LjIgNTguOTMzMkM5NS4yIDU2LjUzMzIgOTYuMjg0NSA1NC4wMzc5IDk3LjY2MDUgNTIuNjAzM1oiIGZpbGw9IiMwNDAyMDMiLz4KPHBhdGggZD0iTTk3LjQ2NjYgODEuNDY2N0MxMDEuNiA3NS40NjY3IDEwNi40IDc2LjkzMzMgMTA0LjggODQuNTMzM0MxMDIuMjY3IDkxLjQ2NjcgOTQuMjY2NiA5My44NjY3IDk1LjIgODUuNkw5NS42IDg0LjEzMzNMOTcuNDY2NiA4MS40NjY3WiIgZmlsbD0iIzA0MDIwMyIvPgo8cGF0aCBkPSJNNzQuMTMzMyA5My4yQzc5LjMzMzMgODcuNDY2NyA4Mi44IDkxLjQ2NjcgODAuNjY2NyA5Ny44NjY3Qzc4IDEwNCA3MiAxMDYuNTMzIDcxLjQ2NjcgMTAwQzcxLjMzMzMgOTggNzIuNTMzMyA5NC44IDc0LjEzMzMgOTMuMloiIGZpbGw9IiMwNDAyMDMiLz4KPGVsbGlwc2UgY3g9IjY0LjM2NTIiIGN5PSIzMy42OTgxIiByeD0iOC4wODg2MiIgcnk9IjQuNTAwMzEiIGZpbGw9IiMwNDAzMDQiLz4KPC9nPgo8cGF0aCBkPSJNNDAgMUg4OEMxMDkuNTM5IDEgMTI3IDE4LjQ2MDkgMTI3IDQwVjg4QzEyNyAxMDkuNTM5IDEwOS41MzkgMTI3IDg4IDEyN0g0MEMxOC40NjA5IDEyNyAxIDEwOS41MzkgMSA4OFY0MEMxIDE4LjQ2MDkgMTguNDYwOSAxIDQwIDFaIiBzdHJva2U9IiM0QTRBNEEiIHN0cm9rZS13aWR0aD0iMiIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyXzE1NV8yIiB4MT0iNjQiIHkxPSIzMy43MDY3IiB4Mj0iMTA3LjgxNyIgeTI9IjE4OC44NTQiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzEzMTQxNCIvPgo8c3RvcCBvZmZzZXQ9IjAuMTE1Mzg1IiBzdG9wLWNvbG9yPSIjMzgzODM4Ii8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzgyN0Q4MiIvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MV9saW5lYXJfMTU1XzIiIHgxPSI2My41NjAxIiB5MT0iMTEzLjcwNiIgeDI9IjczLjgwMzgiIHkyPSI5NC4yNjU0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiNBN0E1QTYiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNUQ1OTVCIi8+CjwvbGluZWFyR3JhZGllbnQ+CjxjbGlwUGF0aCBpZD0iY2xpcDBfMTU1XzIiPgo8cGF0aCBkPSJNMCA0MEMwIDE3LjkwODYgMTcuOTA4NiAwIDQwIDBIODhDMTEwLjA5MSAwIDEyOCAxNy45MDg2IDEyOCA0MFY4OEMxMjggMTEwLjA5MSAxMTAuMDkxIDEyOCA4OCAxMjhINDBDMTcuOTA4NiAxMjggMCAxMTAuMDkxIDAgODhWNDBaIiBmaWxsPSJ3aGl0ZSIvPgo8L2NsaXBQYXRoPgo8L2RlZnM+Cjwvc3ZnPgo=" alt=""></div>
+  <div>
+    <div class="header-title">MagicBits</div>
+    <div class="header-sub" data-i18n="headerSub">ScatterBoard · 白板散布生成器</div>
+  </div>
+  <button class="lang-toggle" id="langToggle" type="button">EN</button>
+</div>
+
+<!-- Tab 切换 -->
+<div class="tabs">
+  <button class="tab active" id="tabGenerate" data-i18n="tabGenerate">🎨 生成新画板</button>
+  <button class="tab" id="tabReroll" data-i18n="tabReroll">🔄 重排已有画板</button>
+</div>
+
+<!-- 状态条 -->
+<div class="status-bar warn" id="statusBar">
+  <span class="dot orange" id="statusDot"></span>
+  <span id="statusText" data-i18n="statusSelectSourceShort">请选中源组件</span>
+</div>
+
+<!-- 通用参数区 -->
+<div class="section">
+  <div class="section-label" data-i18n="layoutMode">布局模式</div>
+  <select id="layoutMode">
+    <option value="random" data-i18n="layoutRandom">🎯 随机散布</option>
+    <option value="grid" data-i18n="layoutGrid">📐 网格排列</option>
+    <option value="spiral" data-i18n="layoutSpiral">🌀 黄金螺旋</option>
+    <option value="circle" data-i18n="layoutCircle">⭕ 同心圆环</option>
+    <option value="masonry" data-i18n="layoutMasonry">🌊 瀑布流</option>
+    <option value="hexgrid" data-i18n="layoutHexgrid">🔷 六角网格</option>
+    <option value="starburst" data-i18n="layoutStarburst">💥 爆炸辐射</option>
+    <option value="organic" data-i18n="layoutOrganic">🌿 有机分布</option>
+    <option value="clusters" data-i18n="layoutClusters">🧲 引力簇</option>
+    <option value="zigzag" data-i18n="layoutZigzag">🐍 蛇形走位</option>
+    <option value="vortex" data-i18n="layoutVortex">🌪️ 漩涡</option>
+  </select>
+</div>
+
+<div class="section">
+  <div class="section-label" data-i18n="scaleRange">缩放范围</div>
+  <div class="row">
+    <span class="row-label" data-i18n="minimum">最小</span>
+    <input type="range" id="scaleMinRange" min="10" max="200" value="50">
+    <span class="row-value" id="scaleMinValue">50%</span>
+  </div>
+  <div class="row">
+    <span class="row-label" data-i18n="maximum">最大</span>
+    <input type="range" id="scaleMaxRange" min="10" max="200" value="150">
+    <span class="row-value" id="scaleMaxValue">150%</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label" data-i18n="rotation">旋转角度</div>
+  <div class="row">
+    <input type="range" id="rotationRange" min="0" max="180" value="15">
+    <span class="row-value" id="rotationValue">±15°</span>
+  </div>
+</div>
+
+<!-- 生成模式专属 -->
+<div id="generateOnly">
+  <div class="section">
+    <div class="section-label" data-i18n="copiesPerSource">每组件副本数</div>
+    <div class="row">
+      <input type="range" id="copiesRange" min="1" max="50" value="1">
+      <span class="row-value" id="copiesValue">1</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label" data-i18n="canvasSize">画布尺寸</div>
+    <div class="row">
+      <span class="row-label" data-i18n="width">宽</span>
+      <input type="number" id="canvasW" value="1440" min="200" max="10000">
+      <span class="row-label" data-i18n="height">高</span>
+      <input type="number" id="canvasH" value="900" min="200" max="10000">
+    </div>
+  </div>
+</div>
+
+<div class="section" id="gridColsSection" style="display:none;">
+  <div class="section-label" data-i18n="gridColumns">网格列数 (0 = 自动)</div>
+  <div class="row">
+    <input type="range" id="gridColsRange" min="0" max="20" value="0">
+    <span class="row-value" id="gridColsValue" data-i18n="auto">自动</span>
+  </div>
+</div>
+
+<div class="section" id="jitterSection" style="display:none;">
+  <div class="section-label" data-i18n="jitter">位置抖动</div>
+  <div class="row">
+    <span class="row-label">X</span>
+    <input type="range" id="jitterXRange" min="0" max="200" value="40">
+    <span class="row-value" id="jitterXValue">40px</span>
+  </div>
+  <div class="row">
+    <span class="row-label">Y</span>
+    <input type="range" id="jitterYRange" min="0" max="200" value="40">
+    <span class="row-value" id="jitterYValue">40px</span>
+  </div>
+</div>
+
+<div class="section">
+  <label class="checkbox-row">
+    <input type="checkbox" id="avoidOverlap">
+    <span data-i18n="avoidOverlap">避免重叠</span>
+  </label>
+  <div class="row" id="overlapGapRow" style="display:none;">
+    <span class="row-label" data-i18n="gap">间距</span>
+    <input type="range" id="overlapGapRange" min="0" max="100" value="20">
+    <span class="row-value" id="overlapGapValue">20px</span>
+  </div>
+</div>
+
+<div class="section">
+  <label class="checkbox-row">
+    <input type="checkbox" id="randomZDepth">
+    <span data-i18n="randomZDepth">随机打乱层级</span>
+  </label>
+</div>
+
+<!-- 按钮区 -->
+<button class="btn btn-primary" id="btnGenerate" disabled>
+  🎲 请先选中源组件
+</button>
+<button class="btn btn-secondary hidden" id="btnReroll" disabled>
+  🔄 请先选中 ScatterBoard
+</button>
+
+<div class="footer" data-i18n="footer">MagicBits v1.0 · ScatterBoard</div>
+
+<script>
+  // ============ DOM ============
+  var tabGenerate  = document.getElementById('tabGenerate');
+  var tabReroll    = document.getElementById('tabReroll');
+  var statusBar    = document.getElementById('statusBar');
+  var statusDot    = document.getElementById('statusDot');
+  var statusText   = document.getElementById('statusText');
+  var btnGenerate  = document.getElementById('btnGenerate');
+  var btnReroll    = document.getElementById('btnReroll');
+  var generateOnly = document.getElementById('generateOnly');
+  var langToggle   = document.getElementById('langToggle');
+
+  var layoutMode   = document.getElementById('layoutMode');
+  var scaleMinR    = document.getElementById('scaleMinRange');
+  var scaleMinV    = document.getElementById('scaleMinValue');
+  var scaleMaxR    = document.getElementById('scaleMaxRange');
+  var scaleMaxV    = document.getElementById('scaleMaxValue');
+  var rotationR    = document.getElementById('rotationRange');
+  var rotationV    = document.getElementById('rotationValue');
+  var copiesRange  = document.getElementById('copiesRange');
+  var copiesValue  = document.getElementById('copiesValue');
+  var canvasW      = document.getElementById('canvasW');
+  var canvasH      = document.getElementById('canvasH');
+  var gridColsR    = document.getElementById('gridColsRange');
+  var gridColsV    = document.getElementById('gridColsValue');
+  var jitterXR     = document.getElementById('jitterXRange');
+  var jitterXV     = document.getElementById('jitterXValue');
+  var jitterYR     = document.getElementById('jitterYRange');
+  var jitterYV     = document.getElementById('jitterYValue');
+  var avoidOverlap = document.getElementById('avoidOverlap');
+  var overlapGapR  = document.getElementById('overlapGapRange');
+  var overlapGapV  = document.getElementById('overlapGapValue');
+  var randomZDepth = document.getElementById('randomZDepth');
+  var gridColsSection = document.getElementById('gridColsSection');
+  var jitterSection   = document.getElementById('jitterSection');
+  var overlapGapRow   = document.getElementById('overlapGapRow');
+
+  var currentMode = 'generate';
+  var sourceCount = 0;
+  var hasBoard = false;
+  var boardName = '';
+
+  // ============ i18n ============
+
+  var messages = {
+    zh: {
+      headerSub: 'ScatterBoard · 白板散布生成器',
+      tabGenerate: '🎨 生成新画板',
+      tabReroll: '🔄 重排已有画板',
+      statusSelectSourceShort: '请选中源组件',
+      statusNoSource: '请先在画布上选中源组件',
+      statusSelectedSources: function(count) { return '已选中 ' + count + ' 个源组件'; },
+      statusSelectBoard: '请先选中一个 ScatterBoard 画板',
+      statusSelectedBoard: function(name) { return '选中: ' + name; },
+      btnGenerateNeedSource: '🎲 请先选中源组件',
+      btnGenerateReady: function(count) { return '🎲 生成 ScatterBoard (' + count + ' 源)'; },
+      btnRerollNeedBoard: '🔄 请先选中 ScatterBoard',
+      btnRerollReady: function(name) { return '🔄 重排「' + name + '」'; },
+      layoutMode: '布局模式',
+      layoutRandom: '🎯 随机散布',
+      layoutGrid: '📐 网格排列',
+      layoutSpiral: '🌀 黄金螺旋',
+      layoutCircle: '⭕ 同心圆环',
+      layoutMasonry: '🌊 瀑布流',
+      layoutHexgrid: '🔷 六角网格',
+      layoutStarburst: '💥 爆炸辐射',
+      layoutOrganic: '🌿 有机分布',
+      layoutClusters: '🧲 引力簇',
+      layoutZigzag: '🐍 蛇形走位',
+      layoutVortex: '🌪️ 漩涡',
+      scaleRange: '缩放范围',
+      minimum: '最小',
+      maximum: '最大',
+      rotation: '旋转角度',
+      copiesPerSource: '每组件副本数',
+      canvasSize: '画布尺寸',
+      width: '宽',
+      height: '高',
+      gridColumns: '网格列数 (0 = 自动)',
+      auto: '自动',
+      jitter: '位置抖动',
+      avoidOverlap: '避免重叠',
+      gap: '间距',
+      randomZDepth: '随机打乱层级',
+      footer: 'MagicBits v1.0 · ScatterBoard',
+      langButton: 'EN'
+    },
+    en: {
+      headerSub: 'ScatterBoard · Whiteboard layout generator',
+      tabGenerate: '🎨 Generate board',
+      tabReroll: '🔄 Reroll board',
+      statusSelectSourceShort: 'Select source layers',
+      statusNoSource: 'Select at least one source layer on the canvas',
+      statusSelectedSources: function(count) { return count + ' source layer' + (count === 1 ? '' : 's') + ' selected'; },
+      statusSelectBoard: 'Select a ScatterBoard frame first',
+      statusSelectedBoard: function(name) { return 'Selected: ' + name; },
+      btnGenerateNeedSource: '🎲 Select source layers',
+      btnGenerateReady: function(count) { return '🎲 Generate ScatterBoard (' + count + ' source' + (count === 1 ? '' : 's') + ')'; },
+      btnRerollNeedBoard: '🔄 Select a ScatterBoard',
+      btnRerollReady: function(name) { return '🔄 Reroll "' + name + '"'; },
+      layoutMode: 'Layout mode',
+      layoutRandom: '🎯 Random scatter',
+      layoutGrid: '📐 Grid',
+      layoutSpiral: '🌀 Golden spiral',
+      layoutCircle: '⭕ Concentric rings',
+      layoutMasonry: '🌊 Masonry',
+      layoutHexgrid: '🔷 Hex grid',
+      layoutStarburst: '💥 Starburst',
+      layoutOrganic: '🌿 Organic',
+      layoutClusters: '🧲 Clusters',
+      layoutZigzag: '↯ Zigzag',
+      layoutVortex: '🌪 Vortex',
+      scaleRange: 'Scale range',
+      minimum: 'Min',
+      maximum: 'Max',
+      rotation: 'Rotation',
+      copiesPerSource: 'Copies per source',
+      canvasSize: 'Canvas size',
+      width: 'W',
+      height: 'H',
+      gridColumns: 'Grid columns (0 = auto)',
+      auto: 'Auto',
+      jitter: 'Position jitter',
+      avoidOverlap: 'Avoid overlap',
+      gap: 'Gap',
+      randomZDepth: 'Randomize layer order',
+      footer: 'MagicBits v1.0 · ScatterBoard',
+      langButton: '中文'
+    }
+  };
+
+  function safeGetLang() {
+    try {
+      return localStorage.getItem('magicbits-lang');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function safeSetLang(lang) {
+    try {
+      localStorage.setItem('magicbits-lang', lang);
+    } catch (_) {
+      // Figma's plugin iframe can restrict localStorage in some contexts.
+    }
+  }
+
+  function detectInitialLang() {
+    var saved = safeGetLang();
+    if (saved === 'zh' || saved === 'en') return saved;
+    return /^zh/i.test(navigator.language || '') ? 'zh' : 'en';
+  }
+
+  var currentLang = detectInitialLang();
+
+  function t(key) {
+    var msg = messages[currentLang][key] || messages.en[key] || key;
+    if (typeof msg === 'function') {
+      return msg.apply(null, Array.prototype.slice.call(arguments, 1));
+    }
+    return msg;
+  }
+
+  function applyLanguage() {
+    document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var key = nodes[i].getAttribute('data-i18n');
+      nodes[i].textContent = t(key);
+    }
+    langToggle.textContent = t('langButton');
+    gridColsV.textContent = parseInt(gridColsR.value) === 0 ? t('auto') : String(parseInt(gridColsR.value));
+    updateUI();
+  }
+
+  // ============ Tab 切换 ============
+
+  function setMode(mode) {
+    currentMode = mode;
+    if (mode === 'generate') {
+      tabGenerate.classList.add('active');
+      tabReroll.classList.remove('active');
+      generateOnly.classList.remove('hidden');
+      btnGenerate.classList.remove('hidden');
+      btnReroll.classList.add('hidden');
+    } else {
+      tabReroll.classList.add('active');
+      tabGenerate.classList.remove('active');
+      generateOnly.classList.add('hidden');
+      btnReroll.classList.remove('hidden');
+      btnGenerate.classList.add('hidden');
+    }
+    updateUI();
+  }
+
+  tabGenerate.addEventListener('click', function () { setMode('generate'); });
+  tabReroll.addEventListener('click', function () { setMode('reroll'); });
+
+  // ============ 状态更新 ============
+
+  function updateUI() {
+    if (currentMode === 'generate') {
+      if (sourceCount > 0) {
+        statusBar.className = 'status-bar ok';
+        statusDot.className = 'dot green';
+        statusText.textContent = t('statusSelectedSources', sourceCount);
+        btnGenerate.disabled = false;
+        btnGenerate.textContent = t('btnGenerateReady', sourceCount);
+      } else {
+        statusBar.className = 'status-bar warn';
+        statusDot.className = 'dot orange';
+        statusText.textContent = t('statusNoSource');
+        btnGenerate.disabled = true;
+        btnGenerate.textContent = t('btnGenerateNeedSource');
+      }
+    } else {
+      if (hasBoard) {
+        statusBar.className = 'status-bar ok';
+        statusDot.className = 'dot green';
+        statusText.textContent = t('statusSelectedBoard', boardName);
+        btnReroll.disabled = false;
+        btnReroll.textContent = t('btnRerollReady', boardName);
+      } else {
+        statusBar.className = 'status-bar warn';
+        statusDot.className = 'dot orange';
+        statusText.textContent = t('statusSelectBoard');
+        btnReroll.disabled = true;
+        btnReroll.textContent = t('btnRerollNeedBoard');
+      }
+    }
+  }
+
+  // ============ 滑块绑定 ============
+
+  function bindRange(range, display, format) {
+    range.addEventListener('input', function () {
+      display.textContent = format(parseInt(range.value));
+    });
+  }
+
+  bindRange(copiesRange, copiesValue, function(v) { return String(v); });
+  bindRange(scaleMinR, scaleMinV, function(v) { return v + '%'; });
+  bindRange(scaleMaxR, scaleMaxV, function(v) { return v + '%'; });
+  bindRange(rotationR, rotationV, function(v) { return '±' + v + '°'; });
+  bindRange(gridColsR, gridColsV, function(v) { return v === 0 ? t('auto') : String(v); });
+  bindRange(jitterXR, jitterXV, function(v) { return v + 'px'; });
+  bindRange(jitterYR, jitterYV, function(v) { return v + 'px'; });
+  bindRange(overlapGapR, overlapGapV, function(v) { return v + 'px'; });
+
+  layoutMode.addEventListener('change', function () {
+    var isGrid = layoutMode.value === 'grid';
+    gridColsSection.style.display = isGrid ? 'block' : 'none';
+    jitterSection.style.display = isGrid ? 'block' : 'none';
+  });
+
+  langToggle.addEventListener('click', function () {
+    currentLang = currentLang === 'zh' ? 'en' : 'zh';
+    safeSetLang(currentLang);
+    applyLanguage();
+  });
+
+  avoidOverlap.addEventListener('change', function () {
+    overlapGapRow.style.display = avoidOverlap.checked ? 'flex' : 'none';
+  });
+
+  // ============ 读取配置 ============
+
+  function getConfig() {
+    return {
+      copiesPerSource: parseInt(copiesRange.value),
+      scaleMin: parseInt(scaleMinR.value),
+      scaleMax: parseInt(scaleMaxR.value),
+      rotationMax: parseInt(rotationR.value),
+      layoutMode: layoutMode.value,
+      canvasWidth: parseInt(canvasW.value) || 1440,
+      canvasHeight: parseInt(canvasH.value) || 900,
+      gridColumns: parseInt(gridColsR.value),
+      jitterX: parseInt(jitterXR.value),
+      jitterY: parseInt(jitterYR.value),
+      avoidOverlap: avoidOverlap.checked,
+      overlapGap: parseInt(overlapGapR.value),
+      randomZDepth: randomZDepth.checked,
+      lang: currentLang,
+    };
+  }
+
+  // ============ 按钮 ============
+
+  btnGenerate.addEventListener('click', function () {
+    parent.postMessage({ pluginMessage: { type: 'generate', config: getConfig() } }, '*');
+  });
+
+  btnReroll.addEventListener('click', function () {
+    parent.postMessage({ pluginMessage: { type: 'reroll', config: getConfig() } }, '*');
+  });
+
+  // ============ 接收消息 ============
+
+  window.onmessage = function (event) {
+    var msg = event.data.pluginMessage;
+    if (!msg) return;
+
+    if (msg.type === 'state') {
+      sourceCount = msg.sourceCount || 0;
+      hasBoard = msg.hasBoard || false;
+      boardName = msg.boardName || '';
+      updateUI();
+    }
+  };
+
+  // 就绪
+  applyLanguage();
+  parent.postMessage({ pluginMessage: { type: 'ready', lang: currentLang } }, '*');
+</script>
+
+</body>
+</html>
